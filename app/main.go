@@ -19,12 +19,22 @@ func main() {
 
 	defer l.Close()
 
-	conn, err := l.Accept()
-	if err != nil {
-		fmt.Println("Error accepting connection: ", err.Error())
-		os.Exit(1)
-	}
+	// Handle multi-clients, so the code enters an infinite loop
+	for {
+		conn, err := l.Accept()
+		if err != nil {
+			fmt.Println("Error accepting connection: ", err.Error())
+			continue
+		}
 
+		// Instantly spawn handleClient in the background, so it won't block
+		// the current thread and go back to l.Accept() immediately
+		// This makes the server concurrent (multi-threaded)
+		go handleClient(conn)
+	}
+}
+
+func handleClient(conn net.Conn) {
 	defer conn.Close()
 
 	buff := make([]byte, 1024)
@@ -33,7 +43,11 @@ func main() {
 		if err != nil {
 			break
 		}
-		conn.Write([]byte("+PONG\r\n"))
-	}
 
+		_, err = conn.Write([]byte("+PONG\r\n"))
+		if err != nil {
+			fmt.Println("Error writing to connection: ", err)
+			return
+		}
+	}
 }
