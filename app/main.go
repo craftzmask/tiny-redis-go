@@ -17,11 +17,23 @@ func main() {
 		os.Exit(1)
 	}
 
+	defer l.Close()
+
 	conn, err := l.Accept()
 	if err != nil {
 		fmt.Println("Error accepting connection: ", err.Error())
 		os.Exit(1)
 	}
 
-	conn.Write([]byte("+PONG\r\n"))
+	defer conn.Close()
+
+	buff := make([]byte, 1024)
+	for {
+		_, err := conn.Read(buff)
+		if err != nil {
+			break
+		}
+		conn.Write([]byte("+PONG\r\n"))
+	}
+
 }
