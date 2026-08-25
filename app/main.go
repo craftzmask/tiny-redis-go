@@ -4,7 +4,12 @@ import (
 	"fmt"
 	"net"
 	"os"
+	"slices"
+	"strings"
 )
+
+type RESPType struct {
+}
 
 // Ensures gofmt doesn't remove the "net" and "os" imports in stage 1 (feel free to remove this!)
 var _ = net.Listen
@@ -44,7 +49,15 @@ func handleClient(conn net.Conn) {
 			break
 		}
 
-		_, err = conn.Write([]byte("+PONG\r\n"))
+		resp := "+PONG\r\n"
+		str := strings.ToLower(string(buff))
+		tokens := strings.Split(str, "\r\n")
+		if slices.Contains(tokens, "echo") {
+			content := tokens[len(tokens)-2]
+			resp = fmt.Sprintf("$%d\r\n%s\r\n", len(content), content)
+		}
+
+		_, err = conn.Write([]byte(resp))
 		if err != nil {
 			fmt.Println("Error writing to connection: ", err)
 			return
